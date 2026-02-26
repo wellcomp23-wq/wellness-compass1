@@ -1,0 +1,333 @@
+import React, { useState, useEffect, ReactNode } from "react";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
+import { supabase } from "@/integrations/supabase/client";
+import { getUserRole, getRoleBasedRedirect, UserRole, AppRoles } from "@/lib/auth";
+
+// Import public pages
+import Welcome from "./pages/Welcome";
+import LoginPage from "./pages/Login";
+import Register from "./pages/Register";
+import NotFound from "./pages/NotFound";
+import Terms from "./pages/Terms";
+import VerifyPhone from "./pages/VerifyPhone";
+import VerifyEmail from "./pages/VerifyEmail";
+import ChangePassword from "./pages/ChangePassword";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
+
+// Import authenticated pages - Main
+import Home from "./pages/Home";
+import Profile from "./pages/Profile";
+import Notifications from "./pages/Notifications";
+import Settings from "./pages/Settings";
+
+// Import service pages
+import Doctors from "./pages/Doctors";
+import Pharmacies from "./pages/Pharmacies";
+import Labs from "./pages/Labs";
+import Appointments from "./pages/Appointments";
+import Medications from "./pages/Medications";
+import MedicalRecord from "./pages/MedicalRecord";
+import Emergency from "./pages/Emergency";
+import SymptomChecker from "./pages/SymptomChecker";
+
+// Import community pages
+import Community from "./pages/Community";
+import CreatePost from "./pages/community/CreatePost";
+import ViewPost from "./pages/community/ViewPost";
+
+// Import dashboard pages
+import DoctorDashboard from "./pages/DoctorDashboard";
+import PharmacyDashboard from "./pages/PharmacyDashboard";
+import LabDashboard from "./pages/LabDashboard";
+import HospitalDashboard from "./pages/HospitalDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminLogin from "./pages/AdminLogin";
+
+// Import doctor sub-pages
+import DoctorAppointments from "./pages/doctor/DoctorAppointments";
+import DoctorPatients from "./pages/doctor/DoctorPatients";
+import DoctorLabs from "./pages/doctor/DoctorLabs";
+import DoctorProfile from "./pages/doctor/DoctorProfile";
+import DoctorProfileEdit from "./pages/doctor/DoctorProfileEdit";
+
+// Import pharmacy sub-pages
+import PharmacyOrders from "./pages/pharmacy/PharmacyOrders";
+import PharmacyProfile from "./pages/pharmacy/PharmacyProfile";
+import PharmacySupport from "./pages/pharmacy/PharmacySupport";
+import PharmacyProfileEdit from "./pages/pharmacy/PharmacyProfileEdit";
+
+// Import lab sub-pages
+import LabProfileEdit from "./pages/lab/LabProfileEdit";
+
+// Import hospital sub-pages
+import HospitalProfileEdit from "./pages/hospital/HospitalProfileEdit";
+
+// Import other pages
+import Support from "./pages/Support";
+import OTPVerification from "./pages/OTPVerification";
+
+
+const queryClient = new QueryClient();
+
+const VerifyPhoneRoute = () => <VerifyPhone />;
+const VerifyEmailRoute = () => <VerifyEmail />;
+
+// ===== مكون حماية منفصل للأدمن فقط - لا يعتمد على Supabase Auth =====
+interface AdminProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const AdminProtectedRoute = ({ children }: AdminProtectedRouteProps) => {
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const adminToken = localStorage.getItem("adminToken");
+    const adminTokenExpiry = localStorage.getItem("adminTokenExpiry");
+
+    if (adminToken && adminTokenExpiry) {
+      const expiryTime = parseInt(adminTokenExpiry, 10);
+      if (Date.now() < expiryTime) {
+        setIsAdminLoggedIn(true);
+      } else {
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminTokenExpiry");
+        setIsAdminLoggedIn(false);
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center" dir="rtl">
+        <div className="text-primary animate-pulse text-lg font-bold">
+          جاري التحقق من صلاحيات الأدمن...
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdminLoggedIn) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// ===== مكون حماية للمستخدمين العاديين (مرضى ومقدمي خدمة) =====
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: UserRole[];
+}
+
+const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const checkAuthAndRole = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+          setIsAuthenticated(false);
+          setUserRole(null);
+        } else {
+          setIsAuthenticated(true);
+          const role = await getUserRole(session.user.id);
+          setUserRole(role);
+        }
+      } catch (err) {
+        console.error("Error checking auth:", err);
+        setIsAuthenticated(false);
+        setUserRole(null);
+      }
+      setLoading(false);
+    };
+
+    checkAuthAndRole();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setIsAuthenticated(true);
+        getUserRole(session.user.id).then(setUserRole).catch(err => {
+          console.error("Error getting user role:", err);
+          setUserRole(null);
+        });
+      } else {
+        setIsAuthenticated(false);
+        setUserRole(null);
+      }
+    });
+
+    return () => subscription?.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center" dir="rtl">
+        <div className="text-primary animate-pulse text-lg font-bold">
+          جاري التحقق من الصلاحيات...
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
+    const redirectPath = getRoleBasedRedirect(userRole);
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// مكون Error Boundary لالتقاط الأخطاء وعرض رسالة بدلاً من الشاشة البيضاء
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Error caught by boundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
+// AppContent component to wrap routes
+const AppContent = () => {
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Welcome />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/verify-phone" element={<VerifyPhoneRoute />} />
+      <Route path="/verify-email" element={<VerifyEmailRoute />} />
+      <Route path="/otp-verification" element={<OTPVerification />} />
+      <Route path="/change-password" element={<ChangePassword />} />
+      <Route path="/change-password-new" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+
+      {/* Admin Routes - Completely Separate */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin-dashboard" element={
+        <AdminProtectedRoute>
+          <ErrorBoundary fallback={<div>حدث خطأ في لوحة تحكم المسؤول. يرجى المحاولة لاحقاً.</div>}>
+            <AdminDashboard />
+          </ErrorBoundary>
+        </AdminProtectedRoute>
+      } />
+      <Route path="/AdminDashboard" element={
+        <AdminProtectedRoute>
+          <ErrorBoundary fallback={<div>حدث خطأ في لوحة تحكم المسؤول. يرجى المحاولة لاحقاً.</div>}>
+            <AdminDashboard />
+          </ErrorBoundary>
+        </AdminProtectedRoute>
+      } />
+
+
+      {/* Protected Routes for Regular Users (Patients and Providers) */}
+      <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      
+      <Route path="/doctors" element={<ProtectedRoute><Doctors /></ProtectedRoute>} />
+      <Route path="/pharmacies" element={<ProtectedRoute><Pharmacies /></ProtectedRoute>} />
+      <Route path="/labs" element={<ProtectedRoute><Labs /></ProtectedRoute>} />
+      <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
+      <Route path="/medications" element={<ProtectedRoute><Medications /></ProtectedRoute>} />
+      <Route path="/medical-record" element={<ProtectedRoute><MedicalRecord /></ProtectedRoute>} />
+      <Route path="/emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
+      <Route path="/symptom-checker" element={<ProtectedRoute><SymptomChecker /></ProtectedRoute>} />
+      
+      <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
+      <Route path="/community/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+      <Route path="/community/post/:id" element={<ProtectedRoute><ViewPost /></ProtectedRoute>} />
+      
+      {/* Provider Dashboards */}
+      <Route path="/doctor-dashboard" element={<ProtectedRoute allowedRoles={[AppRoles.DOCTOR]}><DoctorDashboard /></ProtectedRoute>} />
+      <Route path="/DoctorDashboard" element={<ProtectedRoute allowedRoles={[AppRoles.DOCTOR]}><DoctorDashboard /></ProtectedRoute>} />
+      
+      <Route path="/pharmacy-dashboard" element={<ProtectedRoute allowedRoles={[AppRoles.PHARMACIST]}><PharmacyDashboard /></ProtectedRoute>} />
+      <Route path="/PharmacyDashboard" element={<ProtectedRoute allowedRoles={[AppRoles.PHARMACIST]}><PharmacyDashboard /></ProtectedRoute>} />
+      
+      <Route path="/lab-dashboard" element={<ProtectedRoute allowedRoles={[AppRoles.LAB_MANAGER]}><LabDashboard /></ProtectedRoute>} />
+      <Route path="/LabDashboard" element={<ProtectedRoute allowedRoles={[AppRoles.LAB_MANAGER]}><LabDashboard /></ProtectedRoute>} />
+      
+      <Route path="/hospital-dashboard" element={<ProtectedRoute allowedRoles={[AppRoles.HOSPITAL_MANAGER]}><HospitalDashboard /></ProtectedRoute>} />
+      <Route path="/HospitalDashboard" element={<ProtectedRoute allowedRoles={[AppRoles.HOSPITAL_MANAGER]}><HospitalDashboard /></ProtectedRoute>} />
+      
+      {/* Sub-pages (Role-based access) */}
+      <Route path="/doctor/appointments" element={<ProtectedRoute allowedRoles={[AppRoles.DOCTOR]}><DoctorAppointments /></ProtectedRoute>} />
+      <Route path="/doctor/patients" element={<ProtectedRoute allowedRoles={[AppRoles.DOCTOR]}><DoctorPatients /></ProtectedRoute>} />
+      <Route path="/doctor/labs" element={<ProtectedRoute allowedRoles={[AppRoles.DOCTOR]}><DoctorLabs /></ProtectedRoute>} />
+      <Route path="/doctor/profile" element={<ProtectedRoute allowedRoles={[AppRoles.DOCTOR]}><DoctorProfile /></ProtectedRoute>} />
+      <Route path="/doctor/profile/edit" element={<ProtectedRoute allowedRoles={[AppRoles.DOCTOR]}><DoctorProfileEdit /></ProtectedRoute>} />
+      
+      <Route path="/pharmacy/orders" element={<ProtectedRoute allowedRoles={[AppRoles.PHARMACIST]}><PharmacyOrders /></ProtectedRoute>} />
+      <Route path="/pharmacy/profile" element={<ProtectedRoute allowedRoles={[AppRoles.PHARMACIST]}><PharmacyProfile /></ProtectedRoute>} />
+      <Route path="/pharmacy/profile/edit" element={<ProtectedRoute allowedRoles={[AppRoles.PHARMACIST]}><PharmacyProfileEdit /></ProtectedRoute>} />
+      <Route path="/pharmacy/support" element={<ProtectedRoute allowedRoles={[AppRoles.PHARMACIST]}><PharmacySupport /></ProtectedRoute>} />
+      
+      <Route path="/lab/profile/edit" element={<ProtectedRoute allowedRoles={[AppRoles.LAB_MANAGER]}><LabProfileEdit /></ProtectedRoute>} />
+      
+      <Route path="/hospital/profile/edit" element={<ProtectedRoute allowedRoles={[AppRoles.HOSPITAL_MANAGER]}><HospitalProfileEdit /></ProtectedRoute>} />
+      
+      <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+      
+      {/* Catch-all */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <TooltipProvider>
+          <BrowserRouter>
+            <AppContent />
+          </BrowserRouter>
+        </TooltipProvider>
+
+        <Toaster />
+        <Sonner />
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;

@@ -1,0 +1,332 @@
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Medical Design System - Wellness Compass (بوصلة العافية) */
+/* All colors MUST be HSL for perfect theming */
+
+@layer base {
+  :root {
+    /* Healthcare-themed color palette */
+    --background: 0 0% 100%;
+    --foreground: 220 13% 13%;
+
+    /* Medical blue - trust and professionalism */
+    --primary: 200 95% 45%;
+    --primary-glow: 200 95% 65%;
+    --primary-deep: 200 95% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Healing green - health and wellness */
+    --secondary: 150 60% 45%;
+    --secondary-glow: 150 60% 65%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Calm medical tones */
+    --accent: 210 25% 95%;
+    --accent-foreground: 220 13% 13%;
+
+    /* Emergency red */
+    --emergency: 0 85% 60%;
+    --emergency-foreground: 0 0% 100%;
+
+    /* Warning amber */
+    --warning: 35 90% 55%;
+    --warning-foreground: 35 90% 10%;
+
+    /* Success green */
+    --success: 140 85% 45%;
+    --success-foreground: 0 0% 100%;
+
+    /* Neutral medical grays */
+    --muted: 210 15% 96%;
+    --muted-foreground: 215 15% 45%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 13%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 13%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 15% 91%;
+    --input: 210 15% 94%;
+    --ring: 200 95% 45%;
+
+    --radius: 12px;
+
+    /* Medical gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-glow)));
+    --gradient-healing: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-subtle: linear-gradient(180deg, hsl(var(--background)), hsl(var(--accent)));
+
+    /* Medical shadows */
+    --shadow-primary: 0 10px 30px -10px hsl(var(--primary) / 0.3);
+    --shadow-secondary: 0 8px 25px -8px hsl(var(--secondary) / 0.25);
+    --shadow-card: 0 4px 20px -4px hsl(220 13% 13% / 0.08);
+    --shadow-floating: 0 15px 40px -15px hsl(220 13% 13% / 0.12);
+
+    /* Animation system */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Typography scale */
+    --font-arabic: 'Tajawal', 'Cairo', sans-serif;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-arabic;
+    direction: rtl;
+  }
+
+  [dir="ltr"] {
+    direction: ltr;
+  }
+}
+
+@layer components {
+  /* Medical component styles */
+  .medical-card {
+    @apply bg-card rounded-2xl p-6 shadow-[var(--shadow-card)] border border-border/50;
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--accent)) 100%);
+    transition: var(--transition-smooth);
+  }
+
+  .medical-card:hover {
+    box-shadow: var(--shadow-floating);
+    transform: translateY(-2px);
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+
+  .gradient-healing {
+    background: var(--gradient-healing);
+  }
+
+  .shadow-primary {
+    box-shadow: var(--shadow-primary);
+  }
+
+  .shadow-secondary {
+    box-shadow: var(--shadow-secondary);
+  }
+
+  /* Medical button variants will be handled in button component */
+  .btn-emergency {
+    @apply bg-emergency text-emergency-foreground hover:bg-emergency/90;
+    box-shadow: var(--shadow-primary);
+  }
+
+  .btn-medical {
+    background: var(--gradient-primary);
+    @apply text-primary-foreground border-0;
+    box-shadow: var(--shadow-primary);
+    transition: var(--transition-smooth);
+  }
+
+  .btn-medical:hover {
+    background: var(--gradient-healing);
+    transform: translateY(-1px);
+  }
+
+  .btn-healing {
+    background: var(--gradient-secondary);
+    @apply text-secondary-foreground border-0;
+    box-shadow: var(--shadow-secondary);
+  }
+
+  .btn-login-dynamic {
+    background: hsl(var(--primary));
+    @apply text-primary-foreground border-0;
+    box-shadow: var(--shadow-primary);
+    transition: var(--transition-smooth);
+  }
+
+  .btn-login-dynamic:hover {
+    background: var(--gradient-healing);
+    transform: translateY(-1px);
+  }
+
+  /* Floating action styles */
+  .floating-action {
+    @apply fixed bottom-6 right-6 z-50 rounded-full p-4;
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow-floating);
+    transition: var(--transition-bounce);
+  }
+
+  .floating-action:hover {
+    transform: scale(1.1);
+  }
+
+  /* Gradient text effect */
+  .gradient-text {
+    background: var(--gradient-healing);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Welcome page animations */
+  .welcome-hero {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .welcome-orbit {
+    position: absolute;
+    inset: -120px;
+    background:
+      radial-gradient(circle at 0% 0%, hsl(var(--primary) / 0.18), transparent 55%),
+      radial-gradient(circle at 100% 0%, hsl(var(--secondary) / 0.16), transparent 55%),
+      radial-gradient(circle at 50% 100%, hsl(var(--primary-glow) / 0.18), transparent 55%);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .welcome-logo-shell {
+    position: relative;
+    isolation: isolate;
+    box-shadow: var(--shadow-floating);
+    animation: welcome-logo-float 4s var(--transition-bounce) infinite;
+  }
+
+  .welcome-logo-pulse::before {
+    content: "";
+    position: absolute;
+    inset: -18px;
+    border-radius: 999px;
+    background: radial-gradient(circle, hsl(var(--primary) / 0.35), transparent 60%);
+    opacity: 0;
+    animation: welcome-logo-pulse 3.2s ease-out infinite;
+    z-index: -1;
+  }
+
+  .welcome-stagger-1 {
+    animation: welcome-fade-up 0.7s ease-out 0.12s both;
+  }
+
+  .welcome-stagger-2 {
+    animation: welcome-fade-up 0.7s ease-out 0.24s both;
+  }
+
+  .welcome-stagger-3 {
+    animation: welcome-fade-up 0.7s ease-out 0.36s both;
+  }
+
+  .welcome-card-hover {
+    transition: var(--transition-bounce);
+  }
+
+  .welcome-card-hover:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: var(--shadow-floating);
+  }
+}
+
+@keyframes welcome-logo-float {
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.03);
+  }
+}
+
+@keyframes welcome-logo-pulse {
+  0% {
+    opacity: 0.0;
+    transform: scale(0.9);
+  }
+  40% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes welcome-fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
