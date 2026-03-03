@@ -1,0 +1,345 @@
+import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/integrations/supabase/client'
+import { usePatientData } from '@/hooks/usePatientData'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Heart,
+  Pill,
+  Calendar,
+  Users,
+  AlertTriangle,
+  Hospital,
+  Stethoscope,
+  Activity,
+  TrendingUp,
+  ChevronLeft,
+  RefreshCw,
+  LogOut
+} from 'lucide-react'
+
+export default function Home() {
+  const navigate = useNavigate()
+  const { patient, stats, nextAppointment, loading, error, refetch } = usePatientData()
+  const [userName, setUserName] = useState('')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        navigate('/login', { replace: true })
+        return
+      }
+      setUserName(session.user.email?.split('@')[0] || 'المستخدم')
+    }
+    checkAuth()
+  }, [navigate])
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await refetch()
+    setIsRefreshing(false)
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    navigate('/login', { replace: true })
+  }
+
+  const navigationCards = [
+    {
+      id: 'health-profile',
+      title: 'ملفك الصحي',
+      description: 'عرض وتحديث بيانات صحتك',
+      icon: Heart,
+      color: 'from-emerald-50 to-emerald-100',
+      borderColor: 'border-emerald-200',
+      buttonColor: 'bg-emerald-500 hover:bg-emerald-600',
+      path: '/profile',
+      stats: patient?.weight ? `${patient.weight} كغ` : 'غير محدد'
+    },
+    {
+      id: 'symptom-analyzer',
+      title: 'معامل الأعراض',
+      description: 'حلل أعراضك بذكاء',
+      icon: Stethoscope,
+      color: 'from-blue-50 to-blue-100',
+      borderColor: 'border-blue-200',
+      buttonColor: 'bg-blue-500 hover:bg-blue-600',
+      path: '/symptom-analyzer',
+      stats: 'أداة ذكية'
+    },
+    {
+      id: 'appointments',
+      title: 'حجز المواعيد',
+      description: 'احجز موعداً مع الأطباء',
+      icon: Calendar,
+      color: 'from-slate-50 to-slate-100',
+      borderColor: 'border-slate-200',
+      buttonColor: 'bg-slate-500 hover:bg-slate-600',
+      path: '/appointments',
+      stats: `${stats.upcomingAppointments} موعد`
+    },
+    {
+      id: 'medications',
+      title: 'إدارة الأدوية',
+      description: 'تتبع أدويتك والجرعات',
+      icon: Pill,
+      color: 'from-slate-50 to-slate-100',
+      borderColor: 'border-slate-200',
+      buttonColor: 'bg-slate-500 hover:bg-slate-600',
+      path: '/medications',
+      stats: `${stats.activeMedications} أدوية`
+    },
+    {
+      id: 'community',
+      title: 'المجتمعات الداعمة',
+      description: 'تواصل مع مجتمعات الدعم',
+      icon: Users,
+      color: 'from-slate-50 to-slate-100',
+      borderColor: 'border-slate-200',
+      buttonColor: 'bg-slate-500 hover:bg-slate-600',
+      path: '/community',
+      stats: `${stats.communityGroups} مجموعة`
+    },
+    {
+      id: 'emergency',
+      title: 'دليل الطوارئ',
+      description: 'معلومات الطوارئ والإسعافات',
+      icon: AlertTriangle,
+      color: 'from-red-50 to-red-100',
+      borderColor: 'border-red-200',
+      buttonColor: 'bg-red-500 hover:bg-red-600',
+      path: '/emergency',
+      stats: 'معلومات مهمة'
+    }
+  ]
+
+  const additionalCards = [
+    {
+      id: 'doctors',
+      title: 'الأطباء',
+      description: 'ابحث عن الأطباء المتخصصين',
+      icon: Stethoscope,
+      path: '/doctors'
+    },
+    {
+      id: 'pharmacies',
+      title: 'الصيدليات',
+      description: 'اعثر على الصيدليات القريبة',
+      icon: Pill,
+      path: '/pharmacies'
+    },
+    {
+      id: 'hospitals',
+      title: 'المستشفيات',
+      description: 'معلومات المستشفيات والخدمات',
+      icon: Hospital,
+      path: '/hospitals'
+    }
+  ]
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4" dir="rtl">
+        <Card className="w-full max-w-md border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-700">خطأ في تحميل البيانات</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-red-600">{error}</p>
+            <Button onClick={handleRefresh} className="w-full">
+              حاول مرة أخرى
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pb-20" dir="rtl">
+      {/* Header */}
+      <div className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Heart className="w-6 h-6 text-blue-500" fill="currentColor" />
+            <div>
+              <h1 className="text-xl font-bold text-slate-900">مرحباً بك في بوصلة العافية</h1>
+              <p className="text-sm text-slate-500">{userName}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="text-slate-600"
+            >
+              <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="text-slate-600 hover:text-red-600"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {/* Health Status Card */}
+        {loading ? (
+          <Skeleton className="h-32 rounded-lg" />
+        ) : patient ? (
+          <Card className="border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-emerald-900">
+                <Activity className="w-5 h-5" />
+                نظرة على صحتك
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                <p className="text-sm text-slate-600">فصيلة الدم</p>
+                <p className="text-lg font-bold text-emerald-700">{patient.bloodType || 'غير محدد'}</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                <p className="text-sm text-slate-600">الوزن</p>
+                <p className="text-lg font-bold text-emerald-700">{patient.weight ? `${patient.weight} كغ` : 'غير محدد'}</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                <p className="text-sm text-slate-600">الطول</p>
+                <p className="text-lg font-bold text-emerald-700">{patient.height ? `${patient.height} سم` : 'غير محدد'}</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                <p className="text-sm text-slate-600">معدل الالتزام</p>
+                <p className="text-lg font-bold text-emerald-700">{stats.adherenceRate}%</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {/* Next Appointment Alert */}
+        {nextAppointment && (
+          <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <Calendar className="w-8 h-8 text-blue-600" />
+                <div className="flex-1">
+                  <p className="font-semibold text-blue-900">موعدك القادم</p>
+                  <p className="text-sm text-blue-700">
+                    مع {nextAppointment.doctors?.first_name} {nextAppointment.doctors?.last_name} في{' '}
+                    {new Date(nextAppointment.appointment_time).toLocaleDateString('ar-SA')}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Main Navigation Cards */}
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">خدماتك الرئيسية</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {loading
+              ? Array(6).fill(0).map((_, i) => (
+                  <Skeleton key={i} className="h-40 rounded-lg" />
+                ))
+              : navigationCards.map((card) => {
+                  const Icon = card.icon
+                  return (
+                    <Card
+                      key={card.id}
+                      className={`border-2 ${card.borderColor} bg-gradient-to-br ${card.color} cursor-pointer hover:shadow-lg transition-all`}
+                      onClick={() => navigate(card.path)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <Icon className="w-8 h-8 text-slate-700" />
+                          <span className="text-xs font-semibold text-slate-600 bg-white px-2 py-1 rounded">
+                            {card.stats}
+                          </span>
+                        </div>
+                        <CardTitle className="text-lg text-slate-900 mt-2">{card.title}</CardTitle>
+                        <CardDescription className="text-slate-600">{card.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button className={`w-full ${card.buttonColor} text-white`}>
+                          اذهب الآن
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+          </div>
+        </div>
+
+        {/* Additional Services */}
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">خدمات إضافية</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {additionalCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <Card
+                  key={card.id}
+                  className="border-2 border-slate-200 hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer"
+                  onClick={() => navigate(card.path)}
+                >
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-6 h-6 text-blue-500" />
+                      <CardTitle className="text-base">{card.title}</CardTitle>
+                    </div>
+                    <CardDescription>{card.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full">
+                      استكشف
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Statistics Footer */}
+        <Card className="border-slate-200 bg-white">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+              إحصائياتك
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-2xl font-bold text-blue-600">{stats.activeMedications}</p>
+              <p className="text-sm text-slate-600 mt-1">أدوية نشطة</p>
+            </div>
+            <div className="text-center p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+              <p className="text-2xl font-bold text-emerald-600">{stats.upcomingAppointments}</p>
+              <p className="text-sm text-slate-600 mt-1">مواعيد قادمة</p>
+            </div>
+            <div className="text-center p-4 bg-amber-50 rounded-lg border border-amber-200">
+              <p className="text-2xl font-bold text-amber-600">{stats.adherenceRate}%</p>
+              <p className="text-sm text-slate-600 mt-1">معدل الالتزام</p>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <p className="text-2xl font-bold text-purple-600">{stats.communityGroups}</p>
+              <p className="text-sm text-slate-600 mt-1">مجموعات</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
